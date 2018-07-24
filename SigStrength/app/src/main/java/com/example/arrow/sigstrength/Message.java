@@ -2,6 +2,7 @@ package com.example.arrow.sigstrength;
 
 import android.telephony.CellIdentity;
 import android.telephony.CellIdentityLte;
+import android.location.Location;
 
 public class Message {
     private String sigType ;
@@ -70,8 +71,4 @@ class CellID{
     }
 }
 
-class Location{
-    float lat;
-    private float lng ;
-}
 

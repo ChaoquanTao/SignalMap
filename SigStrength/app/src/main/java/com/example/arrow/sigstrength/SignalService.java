@@ -4,13 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.location.LocationManager;
-import android.os.TestLooperManager;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.telephony.CellIdentity;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoLte;
@@ -30,39 +24,13 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback{
-    TelephonyManager telephonyManager;
-    MyPhoneStateListener myListener;
-    LocationService locationService ;
+public class SignalService {
+    private TelephonyManager telephonyManager;
+    private Context context ;
 
-    String IP = "192.168.1.103";
-    int PORT = 3001 ;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        locationService = new LocationService(this) ;
-        System.out.println(this==getApplicationContext());
-
-        telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        myListener = new MyPhoneStateListener();
-
-        telephonyManager.listen(myListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        //用户不在当前页面时，停止监听。
-        telephonyManager.listen(myListener, PhoneStateListener.LISTEN_NONE);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        telephonyManager.listen(myListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+    public SignalService(Context context) {
+        this.context = context ;
+        this.telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
     }
 
     private class MyPhoneStateListener extends PhoneStateListener {
@@ -73,14 +41,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             Log.d("Lag1", "signal changed");
             super.onSignalStrengthsChanged(signalStrength);
 
-             final Message message = new Message();
-
-
-
-             //locationService.startRequestLocationUpdates();
-            Location location = locationService.getLocation();
-            Log.d("location", String.valueOf(location)) ;
-             message.setLoc(locationService.getLocation());
+            final Message message = new Message();
 
             String[] parts = signalStrength.toString().split(" ");
             String sigName ;
@@ -101,10 +62,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                     sigStrength = parts[9] ;
                     break;
 
-                 default:
-                     sigName="unknown" ;
-                     sigStrength="unknown" ;
-                     break;
+                default:
+                    sigName="unknown" ;
+                    sigStrength="unknown" ;
+                    break;
             }
             ((TextView)findViewById(R.id.tv_signame)).setText(sigName);
             ((TextView)findViewById(R.id.tv_sigStrength)).setText(sigStrength);
@@ -116,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
             //请求获取权限
             if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-               requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},100);
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},100);
                 //return;
             }
 
@@ -160,25 +121,4 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
 
     }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-
-        switch (requestCode) {
-            case 100: {
-                // 授权被允许
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.e("-------->", "授权请求被允许");
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
-                } else {
-                    Log.e("-------->", "授权请求被拒绝");
-                }
-                return;
-            }
-        }
-    }
-
 }
