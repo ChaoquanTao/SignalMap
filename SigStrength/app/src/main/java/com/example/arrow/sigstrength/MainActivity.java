@@ -9,6 +9,8 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.telephony.CellIdentity;
+import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoLte;
 import android.telephony.PhoneStateListener;
@@ -16,6 +18,8 @@ import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
+
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -29,8 +33,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     TelephonyManager telephonyManager;
     MyPhoneStateListener myListener;
 
-    String IP = "192.168.1.101";
-    String PORT = "3000" ;
+    String IP = "192.168.1.103";
+    int PORT = 3001 ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,64 +65,80 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         /*得到信号的强度由每个tiome供应商,有更新*/
         @Override
         public void onSignalStrengthsChanged(final SignalStrength signalStrength) {
-            String signalName ;
             Log.d("Lag1", "signal changed");
             super.onSignalStrengthsChanged(signalStrength);
 
-            Log.d("networktype", String.valueOf(telephonyManager.getNetworkType()));
-            String[] parts = signalStrength.toString().split(" ");
-            //Log.d("hint", "here is context");
-            for (int i = 0; i < parts.length; i++) {
-                Log.d(String.valueOf(i), parts[i]);
-            }
+            final Message message = new Message();
 
+            String[] parts = signalStrength.toString().split(" ");
+            String sigName ;
+            String sigStrength ;
             switch (telephonyManager.getNetworkType()){
                 case TelephonyManager.NETWORK_TYPE_CDMA:
-                    ((TextView)findViewById(R.id.tv_signame)).setText("CDMA Dbm ");
-                    ((TextView)findViewById(R.id.tv_sigStrength)).setText(parts[3]);
+                    sigName="CDMA(dbm)" ;
+                    sigStrength = parts[3] ;
                     break;
 
                 case TelephonyManager.NETWORK_TYPE_EDGE:
-                    ((TextView)findViewById(R.id.tv_signame)).setText("GSM/EDGE ");
-                    ((TextView)findViewById(R.id.tv_sigStrength)).setText(parts[1]);
+                    sigName="GSM/EDGE" ;
+                    sigStrength = parts[1] ;
                     break;
 
                 case TelephonyManager.NETWORK_TYPE_LTE:
-                    ((TextView)findViewById(R.id.tv_signame)).setText("Lte rsrp(dbm): ");
-                    ((TextView)findViewById(R.id.tv_sigStrength)).setText(String.valueOf(parts[9]));
+                    sigName="Lte rsrp(dbm)" ;
+                    sigStrength = parts[9] ;
                     break;
 
                  default:
+                     sigName="unknown" ;
+                     sigStrength="unknown" ;
                      break;
             }
-
+            ((TextView)findViewById(R.id.tv_signame)).setText(sigName);
+            ((TextView)findViewById(R.id.tv_sigStrength)).setText(sigStrength);
             ((TextView)findViewById(R.id.tv_levelValue)).setText(String.valueOf(signalStrength.getLevel()));
 
+            message.setSigType(sigName);
+            message.setSigStrength(Integer.parseInt(sigStrength));
+            message.setSigLevel(signalStrength.getLevel());
+
+            //请求获取权限
             if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},100);
                 //return;
             }
+
+            //不知是安卓版本还是什么原因，cellInfo有时候获取不到
             List<CellInfo> list = telephonyManager.getAllCellInfo();
+            CellIdentityLte cid =null;
             if(list!=null) {
-                //System.out.println("===================================================="+list);
-                Log.d("----", String.valueOf(list));
                 for (int i = 0; i < list.size(); i++) {
                     //System.out.println("list "+i+" "+list.get(i));;
                     Log.d("cellinfo", String.valueOf(list.get(i)));
                 }
-                Log.d("cellid", ((CellInfoLte) list.get(0)).getCellIdentity().toString());
-                ((TextView) findViewById(R.id.tv_cidValue)).setText(((CellInfoLte) list.get(0)).getCellIdentity().toString());
+
+                cid = ((CellInfoLte)list.get(0)).getCellIdentity() ;
+                Log.d("cellid", cid.toString());
+                ((TextView) findViewById(R.id.tv_cidValue)).setText(cid.toString());
                 ((TextView) findViewById(R.id.tv_cellSigStrength)).setText(((CellInfoLte) list.get(0)).getCellSignalStrength().toString());
             }
+            else
+                Log.e("cellInfo","---couldn't get CellInfo---") ;
+
+            if(list!=null)
+                message.setCid(cid);
+
+            //设置定时器向服务端发送数据
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
                     try {
-                        Socket socket = new Socket(IP,3001) ;
+
+                        Socket socket = new Socket(IP,PORT) ;
                         //socket.getOutputStream().write('t');
                         Writer writer = new OutputStreamWriter(socket.getOutputStream()) ;
                         String content = "abc" ;
-                        writer.write(content+'\n');
+                        writer.write(new Gson().toJson(message)+'\n');
                         writer.flush();
                     } catch (IOException e) {
                         e.printStackTrace();

@@ -1,5 +1,6 @@
 package controller;
 
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,7 +25,9 @@ public class SigController {
                         BufferedReader br = new BufferedReader
                                 (new InputStreamReader(socket.getInputStream())) ;
                         //read message from client
-                        System.out.println(br.readLine()) ;
+                        String res = br.readLine() ;
+
+                        System.out.println(res) ;
 
                     } catch (IOException e) {
                         e.printStackTrace();
