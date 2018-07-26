@@ -6,7 +6,7 @@ import android.location.Location;
 
 public class Message {
     private String sigType ;
-    private int sigStrength ;
+    private String sigStrength ;
     private int sigLevel ;
     private CellID cid ;
     private Location loc ;
@@ -28,11 +28,11 @@ public class Message {
         this.sigType = sigType;
     }
 
-    public int getSigStrength() {
+    public String getSigStrength() {
         return sigStrength;
     }
 
-    public void setSigStrength(int sigStrength) {
+    public void setSigStrength(String sigStrength) {
         this.sigStrength = sigStrength;
     }
 
@@ -49,7 +49,10 @@ public class Message {
     }
 
     public void setCid(CellIdentityLte cid) {
-        this.cid = new CellID(cid.getMcc(),cid.getMnc()) ;
+        if(cid != null)
+            this.cid = new CellID(cid.getMcc(),cid.getMnc()) ;
+        else
+            this.cid = new CellID(-1000,-1000);
     }
 
     public Location getLoc() {

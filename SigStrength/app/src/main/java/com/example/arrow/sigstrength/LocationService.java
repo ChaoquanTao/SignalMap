@@ -24,10 +24,12 @@ public class LocationService implements ActivityCompat.OnRequestPermissionsResul
     private Context context;
     private List<String> providers;
     private Location location;
+    private MyLocationListener mLocationListener ;
 
     public LocationService(Context context) {
         this.context = context;
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        mLocationListener = new MyLocationListener();
 //        providers = locationManager.getProviders(true);
 //        Log.d("providers", String.valueOf(providers));
 //        if (providers.contains(LocationManager.GPS_PROVIDER)) {
@@ -70,28 +72,9 @@ public class LocationService implements ActivityCompat.OnRequestPermissionsResul
                     new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
                             Manifest.permission.ACCESS_FINE_LOCATION}, 101);
         }
-        locationManager.requestLocationUpdates(provider, 5000, 3, new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                setLocation(location);
-                return;
-            }
+        locationManager.requestLocationUpdates(provider, 5000, 3, mLocationListener);
 
-            @Override
-            public void onStatusChanged(String s, int i, Bundle bundle) {
 
-            }
-
-            @Override
-            public void onProviderEnabled(String s) {
-
-            }
-
-            @Override
-            public void onProviderDisabled(String s) {
-
-            }
-        });
     }
 
     @Override
@@ -112,4 +95,28 @@ public class LocationService implements ActivityCompat.OnRequestPermissionsResul
             }
         }
     }
+
+    protected class MyLocationListener implements LocationListener{
+
+        @Override
+        public void onLocationChanged(Location loc) {
+            location = loc ;
+        }
+
+        @Override
+        public void onStatusChanged(String s, int i, Bundle bundle) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String s) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String s) {
+
+        }
+    }
+
 }
